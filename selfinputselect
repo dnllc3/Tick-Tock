@@ -1,0 +1,80 @@
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading ui file 'tick_tock_self_scanning_menu.ui'
+#
+# Created by: PyQt5 UI code generator 5.14.1
+#
+# WARNING! All changes made in this file will be lost!
+
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+class Ui_SelfInputSelect(object):
+    def setupUi(self, SelfInputSelect):
+        SelfInputSelect.setObjectName("SelfInputSelect")
+        SelfInputSelect.resize(800, 600)
+        font = QtGui.QFont()
+        font.setItalic(False)
+        SelfInputSelect.setFont(font)
+        self.centralwidget = QtWidgets.QWidget(SelfInputSelect)
+        self.centralwidget.setObjectName("centralwidget")
+        self.label = QtWidgets.QLabel(self.centralwidget)
+        self.label.setGeometry(QtCore.QRect(200, 170, 381, 51))
+        font = QtGui.QFont()
+        font.setPointSize(18)
+        font.setBold(True)
+        font.setItalic(True)
+        font.setWeight(75)
+        self.label.setFont(font)
+        self.label.setFrameShape(QtWidgets.QFrame.Box)
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        self.label.setObjectName("label")
+        self.prescription_one = QtWidgets.QPushButton(self.centralwidget)
+        self.prescription_one.setGeometry(QtCore.QRect(320, 250, 151, 32))
+        self.prescription_one.setObjectName("prescription_one")
+        self.prescription_two = QtWidgets.QPushButton(self.centralwidget)
+        self.prescription_two.setGeometry(QtCore.QRect(320, 290, 151, 32))
+        self.prescription_two.setObjectName("prescription_two")
+        self.label.raise_()
+        self.prescription_two.raise_()
+        self.prescription_one.raise_()
+        SelfInputSelect.setCentralWidget(self.centralwidget)
+        self.menubar = QtWidgets.QMenuBar(SelfInputSelect)
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 22))
+        self.menubar.setObjectName("menubar")
+        SelfInputSelect.setMenuBar(self.menubar)
+        self.statusbar = QtWidgets.QStatusBar(SelfInputSelect)
+        self.statusbar.setObjectName("statusbar")
+        SelfInputSelect.setStatusBar(self.statusbar)
+
+        self.retranslateUi(SelfInputSelect)
+        QtCore.QMetaObject.connectSlotsByName(SelfInputSelect)
+
+    def retranslateUi(self, SelfInputSelect):
+        _translate = QtCore.QCoreApplication.translate
+        SelfInputSelect.setWindowTitle(_translate("SelfInputSelect", "SelfInputSelect"))
+        self.label.setText(_translate("SelfInputSelect", "Which prescription would you like to input?"))
+        self.prescription_one.setText(_translate("SelfInputSelect", "Prescription One"))
+        self.prescription_two.setText(_translate("SelfInputSelect", "Prescription Two "))
+
+class MyApp(QtWidgets.QMainWindow, Ui_SelfInputSelect):
+	
+	def __init__(self, parent=None):
+		super(MyApp,self).__init__(parent=parent)
+		self.setupUi(self)
+		self.prescriptionNumber = 0
+		self.prescription_one.clicked.connect(open_input_prescription_one)
+		self.prescription_two.clicked.connect(open_input_prescription_two)
+
+def open_input_prescription_one(self):
+	self.prescriptionNumber = 1
+
+def open_input_prescription_two(self):
+	self.prescriptionNumber = 2
+
+if __name__ == '__main__':
+	import sys
+	app = QtWidgets.QApplication(sys.argv)
+	window = MyApp()
+	window.show()
+	sys.exit(app.exec_())
