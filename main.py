@@ -24,6 +24,7 @@ from string import digits
 from text2digits import text2digits
 import psutil
 import schedule
+from time import sleep
 
 PI_ACTIVE = True
 ALARM = True
@@ -36,7 +37,12 @@ try:
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/home/pi/Desktop/Tick_Tock/Tick-Tock-961ea96035ea.json"
 except ModuleNotFoundError as e:
     PI_ACTIVE = False
-    
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(13, GPIO.OUT)
+pwm=GPIO.PWM(13, 50)
+pin = 13    
+pwm.start(0)
 
 class MainMenu(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -47,6 +53,7 @@ class MainMenu(QtWidgets.QMainWindow, Ui_MainWindow):
             GPIO.setwarnings(False)
             GPIO.setup(12,GPIO.OUT)
             GPIO.setup(16,GPIO.OUT)
+        
         self.schedule_menu_button.clicked.connect(self.openScheduleWindow)
         self.scan_menu_button.clicked.connect(self.openScanWindow)
         self.setting_menu_button.clicked.connect(self.openSettingWindow) 
@@ -225,7 +232,45 @@ class ConfirmedMenu(QtWidgets.QDialog, Ui_ConfirmedWindow):
                 GPIO.output(12, GPIO.HIGH)
             if number == 2:
                 GPIO.output(16, GPIO.HIGH)
-        self.alarm.play()
+        self.alarm.play(-1)
+        duty = 100 / 18 + 2
+        GPIO.output(13, True)
+        pwm.ChangeDutyCycle(duty)
+        sleep(2)
+        GPIO.output(13, False)
+        pwm.ChangeDutyCycle(0)
+        pillonsensor = 1
+        while (pillonsensor == 1):
+            GPIO.setup(22, GPIO.IN)
+            val = GPIO.input(22)
+            if val == 1:
+                print ("on")
+            else:
+                print ("off")
+                pillonsensor = 0
+                self.alarm.stop()
+            sleep(0.5)
+        
+        pillonsensor = 0
+        GPIO.setup(22, GPIO.IN)
+        GPIO.setup(27, GPIO.IN)
+        val = GPIO.input(22)
+        val2 = GPIO.input(27)
+        while (pillonsensor == 0):
+            val = GPIO.input(27)
+            val2 = GPIO.input(22)
+            if val == 1 and val2 == 1:
+                print ("closed")
+                pillonsensor = 1
+                duty = 0 / 18 + 2
+                GPIO.output(13, True)
+                pwm.ChangeDutyCycle(duty)
+                sleep(2)
+                GPIO.output(13, False)
+                pwm.ChangeDutyCycle(0)
+            else:
+                print ("open")
+            sleep(0.5)
         t.start()
 
     def alarmOff(self, number):#turns alarm off(close)
@@ -323,7 +368,45 @@ class ScheduleMenu(QtWidgets.QDialog, Ui_ScheduleWindow):
                 GPIO.output(12, GPIO.HIGH)
             if number == 2:
                 GPIO.output(16, GPIO.HIGH)
-        self.alarm.play()
+        self.alarm.play(-1)
+        duty = 100 / 18 + 2
+        GPIO.output(13, True)
+        pwm.ChangeDutyCycle(duty)
+        sleep(2)
+        GPIO.output(13, False)
+        pwm.ChangeDutyCycle(0)
+        pillonsensor = 1
+        while (pillonsensor == 1):
+            GPIO.setup(22, GPIO.IN)
+            val = GPIO.input(22)
+            if val == 1:
+                print ("on")
+            else:
+                print ("off")
+                pillonsensor = 0
+                self.alarm.stop()
+            sleep(0.5)
+        
+        pillonsensor = 0
+        GPIO.setup(22, GPIO.IN)
+        GPIO.setup(27, GPIO.IN)
+        val = GPIO.input(22)
+        val2 = GPIO.input(27)
+        while (pillonsensor == 0):
+            val = GPIO.input(27)
+            val2 = GPIO.input(22)
+            if val == 1 and val2 == 1:
+                print ("closed")
+                pillonsensor = 1
+                duty = 0 / 18 + 2
+                GPIO.output(13, True)
+                pwm.ChangeDutyCycle(duty)
+                sleep(2)
+                GPIO.output(13, False)
+                pwm.ChangeDutyCycle(0)
+            else:
+                print ("open")
+            sleep(0.5)
         t.start()
 
     def alarmOff(self, number):
