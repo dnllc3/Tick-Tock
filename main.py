@@ -61,7 +61,7 @@ class MainMenu(QtWidgets.QMainWindow, Ui_MainWindow):
         t.start()
         self.schedule_menu_button.clicked.connect(self.openScheduleWindow)
         self.scan_menu_button.clicked.connect(self.openScanWindow)
-        self.schedule_view_menu_button.clicked.connect(self.openScheduleViewWindow) 
+        self.schedule_view_menu_button.clicked.connect(self.openScheduleViewWindow)
 
     def openScheduleWindow(self):
         self.schedm = PrescriptionSelectMenu()
@@ -272,7 +272,7 @@ class ConfirmedMenu(QtWidgets.QDialog, Ui_ConfirmedWindow):
 
     def alarmOn(self, number):##runs alarm (do whatever open thing here probably)
         ALARM = False
-        t = threading.Timer(5.0, lambda: self.alarmOff(number))#prescription number
+        t = threading.Timer(5.0, lambda: ConfirmedMenu.alarmOff(number))#prescription number
         if PI_ACTIVE:
             if number == 1:
                 GPIO.output(12, GPIO.HIGH)
