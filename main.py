@@ -2,7 +2,7 @@ import os
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
-                          QThreadPool, pyqtSignal,)
+                          QThreadPool, pyqtSignal, QFile, QIODevice, QTextStream)
 import json
 import main_interface
 import schedule_interface
@@ -10,6 +10,7 @@ import scan_interface
 import settings_interface
 import confirm_interface
 import confirmed_interface
+import scheduleview_interface
 import re
 import time, sched, threading
 import pygame
@@ -19,16 +20,18 @@ from scan_interface import *
 from settings_interface import *
 from confirm_interface import *
 from confirmed_interface import *
+from scheduleview_interface import *
 from selfinputselect import *
 from string import digits
 from text2digits import text2digits
 import psutil
 import schedule
+import re
 from time import sleep
 
 PI_ACTIVE = True
 ALARM = True
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "Tick-Tock-961ea96035ea.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.dirname(os.path.abspath(__file__)) + "/Tick-Tock-961ea96035ea.json"
  
 try:
     import picamera
@@ -38,11 +41,7 @@ try:
 except ModuleNotFoundError as e:
     PI_ACTIVE = False
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(13, GPIO.OUT)
-pwm=GPIO.PWM(13, 50)
-pin = 13    
-pwm.start(0)
+
 
 class MainMenu(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -53,10 +52,16 @@ class MainMenu(QtWidgets.QMainWindow, Ui_MainWindow):
             GPIO.setwarnings(False)
             GPIO.setup(12,GPIO.OUT)
             GPIO.setup(16,GPIO.OUT)
-        
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(13, GPIO.OUT)
+            pwm=GPIO.PWM(13, 50)
+            pin = 13    
+            pwm.start(0)
+        t = threading.Timer(1.0, lambda: ConfirmedMenu.wait(self))#prescription number
+        t.start()
         self.schedule_menu_button.clicked.connect(self.openScheduleWindow)
         self.scan_menu_button.clicked.connect(self.openScanWindow)
-        self.setting_menu_button.clicked.connect(self.openSettingWindow) 
+        self.schedule_view_menu_button.clicked.connect(self.openScheduleViewWindow) 
 
     def openScheduleWindow(self):
         self.schedm = PrescriptionSelectMenu()
@@ -68,8 +73,8 @@ class MainMenu(QtWidgets.QMainWindow, Ui_MainWindow):
         self.scanm.show()
         self.hide()
 
-    def openSettingWindow(self):
-        self.setm = SettingMenu()
+    def openScheduleViewWindow(self):
+        self.setm = ScheduleViewMenu()
         self.setm.show()
         self.hide()
 
@@ -83,7 +88,9 @@ class ScanMenu(QtWidgets.QDialog, Ui_ScanWindow):
         self.prescription_button_1.clicked.connect(self.onPrescription1Click)
         self.prescription_button_2.clicked.connect(self.onPrescription2Click)
         self.scan_button.clicked.connect(self.onScanButtonClick)
-        self.home_button.clicked.connect(self.openMainWindow) 
+        self.home_button.clicked.connect(self.openMainWindow)
+        t = threading.Timer(1.0, lambda: ConfirmedMenu.wait(self))#prescription number
+        t.start()
     
     def openMainWindow(self):
         try:
@@ -119,7 +126,8 @@ class ScanMenu(QtWidgets.QDialog, Ui_ScanWindow):
             prescriptionInfo = self.getPrescriptionFromImage()
             self.launchConfirmScreen(prescriptionInfo, self.prescriptionNumber)
         except:
-            self.camFeed.quit()
+            if PI_ACTIVE:
+                self.camFeed.quit()
             msgBox = QtWidgets.QMessageBox()
             msgBox.setText("Prescription not recognized.\nPlease scan again.")
             msgBox.exec()
@@ -163,18 +171,41 @@ class ScanMenu(QtWidgets.QDialog, Ui_ScanWindow):
         self.confm.showScheduleInfo(prescriptionInfo, prescriptionNumber)
         self.hide()
 
-
-class SettingMenu(QtWidgets.QDialog, Ui_SettingWindow):
+class ScheduleViewMenu(QtWidgets.QDialog, Ui_ScheduleViewWindow):
     def __init__(self, parent=None):
-        super(SettingMenu, self).__init__()
+        super(ScheduleViewMenu, self).__init__()
         self.setupUi(self)
-        self.home_button.clicked.connect(self.openMainWindow) 
+        self.home_button.clicked.connect(self.openMainWindow)
+        scheduleFile = QFile("schedule.txt")
+        if not scheduleFile.open(QIODevice.ReadOnly | QIODevice.Text):
+            return
+        
+        text_in = QTextStream(scheduleFile)
+        medication_info = text_in.readLine()
+        prescription_info = text_in.readLine()
+        time_spins = {
+            1: self.time_spin_1,
+            2: self.time_spin_2,
+            3: self.time_spin_3,
+            4: self.time_spin_4,
+            5: self.time_spin_5,
+        }
+        i = 0
+        while not text_in.atEnd():
+            time_spins[i + 1].setText(text_in.readLine())
+            i += 1
+                
+        self.medication_text.setText(medication_info)
+        self.prescription_label.setText(prescription_info)
+        t = threading.Timer(1.0, lambda: ConfirmedMenu.wait(self))#prescription number
+        t.start() 
     
     def openMainWindow(self):
         self.mm = MainMenu()
         self.mm.show()
         self.hide()
-        
+
+
 class ConfirmedMenu(QtWidgets.QDialog, Ui_ConfirmedWindow):
     def __init__(self, parent=None):
         super(ConfirmedMenu, self).__init__()
@@ -184,8 +215,10 @@ class ConfirmedMenu(QtWidgets.QDialog, Ui_ConfirmedWindow):
         self.home_button.clicked.connect(self.openMainWindow)
         pygame.mixer.pre_init(44100, 16, 2, 4096)
         pygame.init()
-        self.alarm = pygame.mixer.Sound("alarm.wav")
+        self.alarm = pygame.mixer.Sound(os.path.dirname(os.path.abspath(__file__)) + "/alarm.wav")
         self.alarm.set_volume(0.15)
+        t = threading.Timer(1.0, lambda: ConfirmedMenu.wait(self))#prescription number
+        t.start()
 
     def openMainWindow(self):
         self.mm = MainMenu()
@@ -198,12 +231,23 @@ class ConfirmedMenu(QtWidgets.QDialog, Ui_ConfirmedWindow):
         self.hide()
         
     def importPrescription(self, info, times, times24):
-        prescriptionText =  info[1] + ", " + info[2] + " times " + info[3] + ", for " + info[4] + " " + info[5]
+
+        scheduleFile = QFile("schedule.txt")
+        if not scheduleFile.open(QIODevice.ReadWrite | QIODevice.Text):
+            return
+        scheduleFile.resize(0)
+
+        prescriptionText =  re.sub(' +',' ',info[1] + ", " + info[2] + " times " + info[3] + ", for " + info[4] + " " + info[5])
         self.medication_text.setText(prescriptionText)
+        out = QTextStream(scheduleFile)
+        out << prescriptionText << "\n"
+
         if info[0] == 1:
             self.prescription_label.setText("Prescription 1")
+            out << "Prescription 1" << "\n"
         if info[0] == 2:
             self.prescription_label.setText("Prescription 2")
+            out << "Prescription 2" << "\n"
         time_spins = {
                     1: self.time_spin_1,
                     2: self.time_spin_2,
@@ -211,15 +255,17 @@ class ConfirmedMenu(QtWidgets.QDialog, Ui_ConfirmedWindow):
                     4: self.time_spin_4,
                     5: self.time_spin_5,
                 }
+        schedule.clear('alarm')
         for i, alarm_time in enumerate(times):
             if alarm_time != '':
+                out << times[i] << "\n"
                 time_spins[i + 1].setText(times[i])
-                schedule.every().day.at(times24[i]).do(self.alarmOn, info[0])
+                schedule.every().day.at(times24[i]).do(self.alarmOn, info[0]).tag('alarm')
         t = threading.Timer(1.0, lambda: self.wait())
         t.start()
 
     def wait(self):
-        print("hello")
+        print("hello123")
         while ALARM:
             schedule.run_pending()
             time.sleep(1)
@@ -289,6 +335,8 @@ class PrescriptionSelectMenu(QtWidgets.QDialog, Ui_PrescriptionSelectWindow):
         self.prescription_one.clicked.connect(lambda: self.setPrescriptionNumber(1))
         self.prescription_two.clicked.connect(lambda: self.setPrescriptionNumber(2))
         self.home_button.clicked.connect(self.openMainWindow)
+        t = threading.Timer(1.0, lambda: ConfirmedMenu.wait(self))#prescription number
+        t.start()
     
     def openMainWindow(self):
         self.mm = MainMenu()
@@ -307,16 +355,6 @@ class ScheduleMenu(QtWidgets.QDialog, Ui_ScheduleWindow):
         super(ScheduleMenu, self).__init__()
         self.setupUi(self)
         self.prescriptionNumber = 0
-        #self.uiList = QListWidget()
-        #self.uiList.insertItem(1, 'Prescription Select')
-        #self.uiList.insertItem(2, 'Prescription Entry')
-        #self.stack = QtWidgets.QStackedWidget(self)
-        #self.stack.addWidget(PrescriptionSelectMenu(self))
-        #self.stack.addWidget(self)
-        #self.stackedWidget.setCurrentIndex(0)
-        #self.show()
-        #self.setCentralWidget(self.stack)
-        #self.runPrescriptionSelection()
         if PI_ACTIVE:
             GPIO.setmode(GPIO.BCM)
             GPIO.setwarnings(False)
@@ -324,21 +362,33 @@ class ScheduleMenu(QtWidgets.QDialog, Ui_ScheduleWindow):
             GPIO.setup(16,GPIO.OUT)
         pygame.mixer.pre_init(44100, 16, 2, 4096)
         pygame.init()
-        self.alarm = pygame.mixer.Sound("alarm.wav")
+        self.alarm = pygame.mixer.Sound(os.path.dirname(os.path.abspath(__file__)) + "/alarm.wav")
         self.alarm.set_volume(0.15)
         currentTime = QtCore.QTime().currentTime()
         self.time_spin_1.setTime(currentTime)
+        t = threading.Timer(1.0, lambda: ConfirmedMenu.wait(self))#prescription number
+        t.start()
         self.SelfInputComplete.clicked.connect(self.schedule_created)
         self.home_button.clicked.connect(self.openMainWindow)
 
     def schedule_created(self):
+        scheduleFile = QFile("schedule.txt")
+        if not scheduleFile.open(QIODevice.ReadWrite | QIODevice.Text):
+            return
+        scheduleFile.resize(0)
+        out = QTextStream(scheduleFile)
+        out << self.MedicationNameInput.text() << ", " << self.FrequencyInput.text() << " times " << str(self.comboBox_3.currentText()) << ", for " << self.Duration_Input.text() << " " << str(self.durationDaysWeeks.currentText()) << "\n"
         if self.prescriptionNumber == 1:
             prescription = "Prescription 1"
+            out << "Prescription 1" << "\n"
         elif self.prescriptionNumber == 2:
             prescription = "Prescription 2"
+            out << "Prescription 2" << "\n"
         alarm_time = self.time_spin_1.time().toString("hh:mm")
-        schedule.every().day.at(alarm_time).do(self.alarmOn, self.prescriptionNumber)
-
+        alarm_time12 = self.time_spin_1.time().toString("hh:mm AP")
+        out << alarm_time12
+        schedule.clear('alarm')
+        schedule.every().day.at(alarm_time).do(self.alarmOn, self.prescriptionNumber).tag('alarm')
         msgBox = QtWidgets.QMessageBox()
         msgBox.setText("Schedule created for " + prescription)
         t = threading.Timer(1.0, lambda: self.wait())#prescription number
@@ -352,9 +402,12 @@ class ScheduleMenu(QtWidgets.QDialog, Ui_ScheduleWindow):
             time.sleep(1)
 
     def openMainWindow(self):
-        for proc in psutil.process_iter():
-            if proc.name() == "matchbox-keyboard":
-                proc.kill()
+        try:
+            for proc in psutil.process_iter():
+                if proc.name() == "matchbox-keyboard":
+                    proc.kill()
+        except:
+            pass
         self.mm = MainMenu()
         self.mm.show()
         self.hide()
@@ -432,12 +485,17 @@ class ConfirmMenu(QtWidgets.QDialog, Ui_ConfirmWindow):
             GPIO.setwarnings(False)
             GPIO.setup(12,GPIO.OUT)
             GPIO.setup(16,GPIO.OUT)
+        t = threading.Timer(1.0, lambda: ConfirmedMenu.wait(self))#prescription number
+        t.start()
         self.home_button.clicked.connect(self.openMainWindow) 
     
     def openMainWindow(self):
-        for proc in psutil.process_iter():
-            if proc.name() == "matchbox-keyboard":
-                proc.kill()
+        try:
+            for proc in psutil.process_iter():
+                if proc.name() == "matchbox-keyboard":
+                    proc.kill()
+        except:
+            pass
         self.mm = MainMenu()
         self.mm.show()
         self.hide()
@@ -490,11 +548,11 @@ class ConfirmMenu(QtWidgets.QDialog, Ui_ConfirmWindow):
                 scheduleFrequency2 = (scheduleFrequency.translate(remove_digits)).replace('times ', '')
                 #detect 'a day, week, month' or 'every other __' instead
             elif('once' in scheduleFrequency):
-                    scheduleFrequency1 = str(1)
-                    scheduleFrequency2 = scheduleFrequency.replace('once ','')
+                scheduleFrequency1 = str(1)
+                scheduleFrequency2 = scheduleFrequency.replace('once ','')
             elif('twice' in scheduleFrequency):
-                    scheduleFrequency1 = str(2)
-                    scheduleFrequency2 = scheduleFrequency.replace('twice ','')
+                scheduleFrequency1 = str(2)
+                scheduleFrequency2 = scheduleFrequency.replace('twice ','')
             else:
                 scheduleFrequency2 = scheduleFrequency
                 scheduleFrequency1 = str(1)
@@ -522,16 +580,6 @@ class ConfirmMenu(QtWidgets.QDialog, Ui_ConfirmWindow):
                 time1 = time1.addSecs(86400/self.scheduleFrequency1_int)
                 self.time_spins[i].setVisible(True)
                 self.time_spins[i].setTime(time1)
-                #time_spin_new = QtWidgets.QTimeEdit(time1, self)
-                #time_spin_new.setGeometry(QtCore.QRect(635, (175 + 45 * (scheduleFrequency1_int - 1)), 85, 30))
-                #time_spin_new.move(635, (175 + 45 * (scheduleFrequency1_int - 1)))
-                #font = QtGui.QFont()
-                #font.setFamily("Avenir Medium")
-                #font.setPointSize(10)
-                #time_spin_new.setFont(font)
-                #time_spin_new.setObjectName("time_spin_new_" + str(scheduleFrequency1_int - 1))
-                #time1 = time1.addSecs(86400/scheduleFrequency1_int)
-                #time_spin_new.setTime(time1) 
                 
         self.time_spin_1.setTime(currentTime)
         self.medication_text.setText(medication)    
@@ -554,9 +602,12 @@ class ConfirmMenu(QtWidgets.QDialog, Ui_ConfirmWindow):
         for i in range (0, self.scheduleFrequency1_int):
             times[i] = self.time_spins[i + 1].time().toString("hh:mm AP")
             times24[i] = self.time_spins[i + 1].time().toString("hh:mm")
-        for proc in psutil.process_iter():
-            if proc.name() == "matchbox-keyboard":
-                proc.kill()
+        try:  
+            for proc in psutil.process_iter():
+                if proc.name() == "matchbox-keyboard":
+                    proc.kill()
+        except:
+            pass
         self.confdm = ConfirmedMenu()
         self.confdm.show()
         self.hide()
@@ -565,17 +616,23 @@ class ConfirmMenu(QtWidgets.QDialog, Ui_ConfirmWindow):
 
     
     def openScheduleWindow(self):
-        for proc in psutil.process_iter():
-            if proc.name() == "matchbox-keyboard":
-                proc.kill()
+        try:
+            for proc in psutil.process_iter():
+                if proc.name() == "matchbox-keyboard":
+                    proc.kill()
+        except:
+            pass
         self.schedm = ScheduleMenu()
         self.schedm.show()
         self.hide()
 
     def openScanWindow(self):
-        for proc in psutil.process_iter():
-            if proc.name() == "matchbox-keyboard":
-                proc.kill()
+        try:
+            for proc in psutil.process_iter():
+                if proc.name() == "matchbox-keyboard":
+                    proc.kill()
+        except:
+            pass
         self.scanm = ScanMenu()
         self.scanm.show()
         self.hide()
@@ -602,6 +659,10 @@ class CameraStream(QThread):
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
+
+    style_file = QFile("stylesheet.qss")
+    style_file.open(QIODevice.ReadOnly)
+    app.setStyleSheet(QTextStream(style_file).readAll())
     mm = MainMenu()
     mm.show()
     sys.exit(app.exec_())

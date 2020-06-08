@@ -16,14 +16,14 @@ class Ui_ScheduleWindow(object):
         SelfScheduleInput.resize(800, 600)
         self.centralwidget = QtWidgets.QWidget(SelfScheduleInput)
         self.centralwidget.setObjectName("centralwidget")
-        self.MedicationNameInput = self.MatchBoxLineEdit(self.centralwidget)
+        self.MedicationNameInput = QtWidgets.QLineEdit(self.centralwidget)
         self.MedicationNameInput.setGeometry(QtCore.QRect(330, 90, 271, 30))
         self.MedicationNameInput.setObjectName("MedicationNameInput")
-        self.StrengthInput = self.MatchBoxLineEdit(self.centralwidget)
+        self.StrengthInput = QtWidgets.QLineEdit(self.centralwidget)
         self.StrengthInput.setGeometry(QtCore.QRect(330, 145, 141, 30))
         self.StrengthInput.setObjectName("StrengthInput")
         self.MedicationNameLabel = QtWidgets.QLabel(self.centralwidget)
-        self.MedicationNameLabel.setGeometry(QtCore.QRect(185, 90, 210, 30))
+        self.MedicationNameLabel.setGeometry(QtCore.QRect(185, 90, 120, 30))
         font = QtGui.QFont()
         font.setFamily("Avenir Heavy")
         font.setBold(False)
@@ -57,7 +57,7 @@ class Ui_ScheduleWindow(object):
         self.SelfInputComplete.setObjectName("SelfInputComplete")
         self.SelfInputComplete.setFont(font)
         self.Self_Scheduling_Title = QtWidgets.QLabel(self.centralwidget)
-        self.Self_Scheduling_Title.setGeometry(QtCore.QRect(175, 20, 450, 61))
+        self.Self_Scheduling_Title.setGeometry(QtCore.QRect(175, 20, 450, 30))
         font = QtGui.QFont()
         font.setFamily("Avenir Heavy")
         font.setPointSize(16)
@@ -92,11 +92,9 @@ class Ui_ScheduleWindow(object):
         self.label_4.setGeometry(QtCore.QRect(330, 310, 41, 30))
         self.label_4.setObjectName("label_4")
         self.TimeLabel = QtWidgets.QLabel(self.centralwidget)
-        self.TimeLabel.setGeometry(QtCore.QRect(260, 310, 75, 30))
+        self.TimeLabel.setGeometry(QtCore.QRect(260, 310, 55, 30))
         font = QtGui.QFont()
         font.setFamily("Avenir Heavy")
-        font.setPointSize(12)
-        font.setBold(True)
         font.setWeight(75)
         self.TimeLabel.setFont(font)
         self.TimeLabel.setAlignment(QtCore.Qt.AlignCenter)
@@ -137,15 +135,15 @@ class Ui_ScheduleWindow(object):
         self.retranslateUi(SelfScheduleInput)
         QtCore.QMetaObject.connectSlotsByName(SelfScheduleInput)
 
-    class MatchBoxLineEdit(QtWidgets.QLineEdit):
-        def focusInEvent(self, e):
-            try:
-                subprocess.Popen(["matchbox-keyboard"])
-            except FileNotFoundError:
-                pass
+    # class MatchBoxLineEdit(QtWidgets.QLineEdit):
+    #     def focusInEvent(self, e):
+    #         try:
+    #             subprocess.Popen(["matchbox-keyboard"])
+    #         except FileNotFoundError:
+    #             pass
         
-        def focusOutEvent(self, e):
-            subprocess.Popen(["matchbox-keyboard"]).kill()
+    #     def focusOutEvent(self, e):
+    #         subprocess.Popen(["matchbox-keyboard"]).kill()
 
 
 
