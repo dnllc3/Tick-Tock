@@ -36,7 +36,7 @@ class Ui_ConfirmWindow(object):
         self.medication_label.setFont(font)
         self.medication_label.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         self.medication_label.setObjectName("medication_label")
-        self.medication_text = QtWidgets.QLineEdit(ConfirmWindow)
+        self.medication_text = self.MatchBoxLineEdit(ConfirmWindow)
         self.medication_text.setGeometry(QtCore.QRect(90, 175, 241, 30))
         font = QtGui.QFont()
         font.setFamily("Avenir Medium")
@@ -183,15 +183,15 @@ class Ui_ConfirmWindow(object):
         self.retranslateUi(ConfirmWindow)
         QtCore.QMetaObject.connectSlotsByName(ConfirmWindow)
         
-    # class MatchBoxLineEdit(QtWidgets.QLineEdit):
-    #     def focusInEvent(self, e):
-    #         try:
-    #             subprocess.Popen(["matchbox-keyboard"])
-    #         except FileNotFoundError:
-    #             pass
+    class MatchBoxLineEdit(QtWidgets.QLineEdit):
+        def focusInEvent(self, e):
+            try:
+                subprocess.Popen(["matchbox-keyboard"])
+            except FileNotFoundError:
+                pass
         
-    #     def focusOutEvent(self, e):
-    #         subprocess.Popen(["matchbox-keyboard"]).kill()
+        def focusOutEvent(self, e):
+            subprocess.Popen(["matchbox-keyboard"]).kill()
 
     def retranslateUi(self, ConfirmWindow):
         _translate = QtCore.QCoreApplication.translate

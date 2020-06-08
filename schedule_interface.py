@@ -16,10 +16,10 @@ class Ui_ScheduleWindow(object):
         SelfScheduleInput.resize(800, 600)
         self.centralwidget = QtWidgets.QWidget(SelfScheduleInput)
         self.centralwidget.setObjectName("centralwidget")
-        self.MedicationNameInput = QtWidgets.QLineEdit(self.centralwidget)
+        self.MedicationNameInput = self.MatchBoxLineEdit(self.centralwidget)
         self.MedicationNameInput.setGeometry(QtCore.QRect(330, 90, 271, 30))
         self.MedicationNameInput.setObjectName("MedicationNameInput")
-        self.StrengthInput = QtWidgets.QLineEdit(self.centralwidget)
+        self.StrengthInput = self.MatchBoxLineEdit(self.centralwidget)
         self.StrengthInput.setGeometry(QtCore.QRect(330, 145, 141, 30))
         self.StrengthInput.setObjectName("StrengthInput")
         self.MedicationNameLabel = QtWidgets.QLabel(self.centralwidget)
@@ -135,15 +135,15 @@ class Ui_ScheduleWindow(object):
         self.retranslateUi(SelfScheduleInput)
         QtCore.QMetaObject.connectSlotsByName(SelfScheduleInput)
 
-    # class MatchBoxLineEdit(QtWidgets.QLineEdit):
-    #     def focusInEvent(self, e):
-    #         try:
-    #             subprocess.Popen(["matchbox-keyboard"])
-    #         except FileNotFoundError:
-    #             pass
+    class MatchBoxLineEdit(QtWidgets.QLineEdit):
+        def focusInEvent(self, e):
+            try:
+                subprocess.Popen(["matchbox-keyboard"])
+            except FileNotFoundError:
+                pass
         
-    #     def focusOutEvent(self, e):
-    #         subprocess.Popen(["matchbox-keyboard"]).kill()
+        def focusOutEvent(self, e):
+            subprocess.Popen(["matchbox-keyboard"]).kill()
 
 
 
